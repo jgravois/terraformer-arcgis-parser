@@ -95,8 +95,8 @@
     return (total >= 0);
   }
 
-  // This function ensures that rings are oriented in the right directions
-  // outer rings are clockwise, holes are counterclockwise
+  // This function ensures that rings are oriented in the preferred ArcGIS direction
+  // outer rings end up clockwise, holes counter-clockwise
   function orientRings(poly){
     var output = [];
     var polygon = poly.slice(0);
@@ -182,10 +182,10 @@
       }
       // is this ring an outer ring? is it clockwise?
       if(ringIsClockwise(ring)){
-        var polygon = [ ring ];
-        outerRings.push(polygon); // push to outer rings
+        var polygon = [ ring.reverse() ];
+        outerRings.push(polygon); // push counter-clockwise to outer rings
       } else {
-        holes.push(ring); // counterclockwise push to holes
+        holes.push(ring.reverse()); // push clockwise to holes
       }
     }
 

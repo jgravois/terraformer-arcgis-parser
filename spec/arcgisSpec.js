@@ -121,18 +121,30 @@ describe("ArcGIS Tools", function(){
       }
     });
   });
-
-  it("should convert a GeoJSON Polygon w/ a hole to an ArcGIS Polygon w/ 2 rings", function() {
+  //
+  // /*
+  // http://geojson.org/geojson-spec.html#id4 // example is wrong
+  //
+  // http://www.macwright.org/2015/03/23/geojson-second-bite.html#polygons
+  // Polygon ring order is undefined in GeoJSON, but there’s a useful default to acquire: the right hand rule. Specifically this means that
+  //
+  // The exterior ring should be counterclockwise.
+  // Interior rings should be clockwise.
+  //
+  // http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#/Geometry_objects/02r3000000n1000000/
+  // */
+  it("should utilize preferred ring ordering when converting a GeoJSON Polygon w/ a hole to an ArcGIS Polygon w/ 2 rings", function() {
+    // counter-clockwise outer, clockwise inner
     var input = {
       "type": "Polygon",
       "coordinates": [
         [ [100.0,0.0],[101.0,0.0],[101.0,1.0],[100.0,1.0],[100.0,0.0] ],
-        [ [100.2,0.2],[100.8,0.2],[100.8,0.8],[100.2,0.8],[100.2,0.2] ]
+        [ [100.2,0.2],[100.2,0.8],[100.8,0.8],[100.8,0.2],[100.2,0.2] ]
       ]
     };
 
     var output = Terraformer.ArcGIS.convert(input);
-
+    // clockwise outer, counter-clockwise inner
     expect(output).toEqual({
       "rings": [
         [ [100, 0], [100, 1], [101, 1], [101, 0], [100, 0] ],
@@ -315,8 +327,8 @@ describe("ArcGIS Tools", function(){
     var output = Terraformer.ArcGIS.parse(input);
 
     var expected = [
-      [ [-122.45,45.63], [-122.45,45.68], [-122.39,45.68], [-122.39,45.63], [-122.45,45.63] ],
-      [ [-122.46,45.64], [-122.4,45.64], [-122.4,45.66], [-122.46,45.66], [-122.46,45.64] ]
+      [ [-122.45,45.63], [-122.39,45.63], [-122.39,45.68], [-122.45,45.68], [-122.45,45.63] ],
+      [ [-122.46,45.64], [-122.46,45.66], [-122.4,45.66], [-122.4,45.64], [-122.46,45.64] ]
     ];
 
     expect(output.coordinates).toEqual(expected);
@@ -675,7 +687,7 @@ describe("ArcGIS Tools", function(){
 
     var output = Terraformer.ArcGIS.parse(input);
 
-    expect(output.coordinates).toEqual([ [ [41.8359375,71.015625],[56.953125,33.75],[21.796875,36.5625],[41.8359375,71.015625] ] ]);
+    expect(output.coordinates).toEqual([ [ [41.8359375,71.015625],[21.796875,36.5625],[56.953125,33.75],[41.8359375,71.015625] ] ]);
     expect(output.type).toEqual("Polygon");
   });
 
@@ -691,7 +703,7 @@ describe("ArcGIS Tools", function(){
 
     var output = Terraformer.ArcGIS.parse(input);
 
-    expect(output.coordinates).toEqual([ [ [41.8359375,71.015625],[56.953125,33.75],[21.796875,36.5625],[41.8359375,71.015625] ] ]);
+    expect(output.coordinates).toEqual([ [ [41.8359375,71.015625],[21.796875,36.5625],[56.953125,33.75],[41.8359375,71.015625] ] ]);
     expect(output.type).toEqual("Polygon");
   });
 
@@ -726,7 +738,8 @@ describe("ArcGIS Tools", function(){
     expect(output).toBeInstanceOfClass(Terraformer.MultiLineString);
   });
 
-  it("should parse an ArcGIS Polygon in a Terraformer GeoJSON MultiPolygon", function() {
+  // ???
+  it("should parse an ArcGIS Polygon into a Terraformer GeoJSON MultiPolygon", function() {
     var input = {
       "rings":[
         [[-122.63,45.52],[-122.57,45.53],[-122.52,45.50],[-122.49,45.48],[-122.64,45.49],[-122.63,45.52],[-122.63,45.52]],
@@ -738,15 +751,15 @@ describe("ArcGIS Tools", function(){
     };
 
     var output = Terraformer.ArcGIS.parse(input);
-
     expect(output.coordinates).toEqual([
       [
-        [ [-122.63,45.52],[-122.57,45.53],[-122.52,45.5],[-122.49,45.48],[-122.64,45.49],[-122.63,45.52],[-122.63,45.52] ]
+        [ [ -122.63, 45.52 ], [ -122.63, 45.52 ], [ -122.64, 45.49 ], [ -122.49, 45.48 ], [ -122.52, 45.5 ], [ -122.57, 45.53 ], [ -122.63, 45.52 ] ]
       ],
       [
-        [ [-83,35],[-83,41],[-74,41],[-74,35],[-83,35] ]
+        [ [ -83, 35 ], [ -74, 35 ], [ -74, 41 ], [ -83, 41 ], [ -83, 35 ] ]
       ]
     ]);
+
     expect(output.type).toEqual("MultiPolygon");
   });
 
@@ -764,7 +777,7 @@ describe("ArcGIS Tools", function(){
     var output = Terraformer.ArcGIS.parse(input);
 
     expect(output.coordinates).toEqual([
-      [ [-122.63,45.52],[-122.57,45.53],[-122.52,45.5],[-122.49,45.48],[-122.64,45.49],[-122.63,45.52],[-122.63,45.52] ]
+      [ [ -122.63, 45.52 ], [ -122.63, 45.52 ], [ -122.64, 45.49 ], [ -122.49, 45.48 ], [ -122.52, 45.5 ], [ -122.57, 45.53 ], [ -122.63, 45.52 ] ]
     ]);
     expect(output.type).toEqual("Polygon");
   });
@@ -782,18 +795,50 @@ describe("ArcGIS Tools", function(){
 
     var output = Terraformer.ArcGIS.parse(input);
 
+    [ [ [ [ -122.63, 45.52 ], [ -122.64, 45.49 ], [ -122.49, 45.48 ], [ -122.52, 45.5 ], [ -122.57, 45.53 ], [ -122.63, 45.52 ] ] ], [ [ [ -83, 35 ], [ -74, 35 ], [ -74, 41 ], [ -83, 41 ], [ -83, 35 ] ] ] ]
+
     expect(output.coordinates).toEqual([
       [
-        [ [-122.63,45.52],[-122.57,45.53],[-122.52,45.5],[-122.49,45.48],[-122.64,45.49],[-122.63,45.52] ]
+        [ [ -122.63, 45.52 ], [ -122.64, 45.49 ], [ -122.49, 45.48 ], [ -122.52, 45.5 ], [ -122.57, 45.53 ], [ -122.63, 45.52 ] ]
       ],
       [
-        [ [-83,35],[-83,41],[-74,41],[-74,35],[-83,35] ]
+        [ [ -83, 35 ], [ -74, 35 ], [ -74, 41 ], [ -83, 41 ], [ -83, 35 ] ]
       ]
     ]);
+
+    // expect(output.coordinates).toEqual([
+    //   [
+    //     [ [-122.63,45.52],[-122.57,45.53],[-122.52,45.5],[-122.49,45.48],[-122.64,45.49],[-122.63,45.52] ]
+    //   ],
+    //   [
+    //     [ [-83,35],[-83,41],[-74,41],[-74,35],[-83,35] ]
+    //   ]
+    // ]);
     expect(output.type).toEqual("MultiPolygon");
   });
 
-  it("should parse an ArcGIS MultiPolygon with holes in web mercator to a GeoJSON MultiPolygon", function(){
+  it("should enforce favored ring order when parsing an ArcGIS Polygon w/ 2 rings to a GeoJSON Polygon w/ a hole", function() {
+    // clockwise outer, counter-clockwise inner
+    var input = {
+      "rings": [
+        [ [100, 0], [100, 1], [101, 1], [101, 0], [100, 0] ],
+        [ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
+      ],
+      "spatialReference":{
+        "wkid":4326
+      }
+    };
+
+    var output = Terraformer.ArcGIS.parse(input);
+    // counter-clockwise outer, clockwise inner
+    expect(output.type).toEqual("Polygon");
+    expect(output.coordinates).toEqual([
+      [ [100.0,0.0],[101.0,0.0],[101.0,1.0],[100.0,1.0],[100.0,0.0] ],
+      [ [100.2,0.2],[100.2,0.8],[100.8,0.8],[100.8,0.2],[100.2,0.2] ]
+    ]);
+  });
+
+  it("should parse an ArcGIS MultiPolygon with holes to a GeoJSON MultiPolygon", function(){
     var input = {
       "type":"polygon",
       "rings":[
@@ -807,15 +852,14 @@ describe("ArcGIS Tools", function(){
       }
     };
     var output = Terraformer.ArcGIS.parse(input);
-
     expect(output.coordinates).toEqual([
       [
-        [ [-100.74462180954974, 39.95017165502381], [-94.50439384003792, 39.91647453608879], [-94.41650267263967, 34.89313438177965], [-100.78856739324887, 34.85708140996771], [-100.74462180954974, 39.95017165502381] ],
-        [ [-96.83349180978595, 37.23732027507514], [-97.31689323047635, 35.967330282988534], [-96.5698183075912, 35.57512048069255], [-95.42724211456674, 36.357601429255965], [-96.83349180978595, 37.23732027507514] ],
-        [ [-99.68993678392353, 39.341088433448896], [-99.68993678392353, 38.24507658785885], [-98.67919734199646, 37.86444431771113], [-98.06395917020868, 38.210554846669694], [-98.06395917020868, 39.341088433448896], [-99.68993678392353, 39.341088433448896] ]
+        [ [ -100.74462180954974, 39.95017165502381 ], [ -100.78856739324887, 34.85708140996771 ], [ -94.41650267263967, 34.89313438177965 ], [ -94.50439384003792, 39.91647453608879 ], [ -100.74462180954974, 39.95017165502381 ] ],
+        [ [ -96.83349180978595, 37.23732027507514 ], [ -95.42724211456674, 36.357601429255965 ], [ -96.5698183075912, 35.57512048069255 ], [ -97.31689323047635, 35.967330282988534 ], [ -96.83349180978595, 37.23732027507514 ] ],
+        [ [ -99.68993678392353, 39.341088433448896 ], [ -98.06395917020868, 39.341088433448896 ], [ -98.06395917020868, 38.210554846669694 ], [ -98.67919734199646, 37.86444431771113 ], [ -99.68993678392353, 38.24507658785885 ], [ -99.68993678392353, 39.341088433448896 ] ]
       ],
       [
-        [ [-101.4916967324349, 38.24507658785885], [-101.44775114873578, 36.073960493943744], [-103.95263145328033, 36.03843312329154], [-103.68895795108557, 38.03770050767439], [-101.4916967324349, 38.24507658785885] ]
+        [ [ -101.4916967324349, 38.24507658785885 ], [ -103.68895795108557, 38.03770050767439 ], [ -103.95263145328033, 36.03843312329154 ], [ -101.44775114873578, 36.073960493943744 ], [ -101.4916967324349, 38.24507658785885 ] ]
       ]
     ]);
     expect(output.type).toEqual("MultiPolygon");
@@ -839,7 +883,7 @@ describe("ArcGIS Tools", function(){
     var output = Terraformer.ArcGIS.parse(input);
 
     expect(output.geometry.coordinates).toEqual([
-      [ [41.8359375,71.015625],[56.953125,33.75],[21.796875,36.5625],[41.8359375,71.015625] ]
+      [ [41.8359375,71.015625],[21.796875,36.5625],[56.953125,33.75],[41.8359375,71.015625] ]
     ]);
     expect(output.geometry.type).toEqual("Polygon");
     expect(output).toBeInstanceOfClass(Terraformer.Feature);
@@ -923,7 +967,7 @@ describe("ArcGIS Tools", function(){
     var output = Terraformer.ArcGIS.parse(input);
 
     expect(output.geometry.coordinates).toEqual([
-      [ [41.8359375,71.015625],[56.953125,33.75],[21.796875,36.5625],[41.8359375,71.015625] ]
+      [ [41.8359375,71.015625],[21.796875,36.5625],[56.953125,33.75],[41.8359375,71.015625] ]
     ]);
     expect(output.geometry.type).toEqual("Polygon");
     expect(output).toBeInstanceOfClass(Terraformer.Feature);
@@ -944,7 +988,7 @@ describe("ArcGIS Tools", function(){
     var output = Terraformer.ArcGIS.parse(input);
 
     expect(output.geometry.coordinates).toEqual([
-      [ [41.8359375,71.015625],[56.953125,33.75],[21.796875,36.5625],[41.8359375,71.015625] ]
+      [ [41.8359375,71.015625],[21.796875,36.5625],[56.953125,33.75],[41.8359375,71.015625] ]
     ]);
     expect(output.geometry.type).toEqual("Polygon");
     expect(output).toBeInstanceOfClass(Terraformer.Feature);
