@@ -183,9 +183,9 @@
       // is this ring an outer ring? is it clockwise?
       if(ringIsClockwise(ring)){
         var polygon = [ ring.reverse() ];
-        outerRings.push(polygon); // push counter-clockwise to outer rings
+        outerRings.push(polygon); // push a counter-clockwise outer ring
       } else {
-        holes.push(ring.reverse()); // push clockwise to holes
+        holes.push(ring.reverse()); // ensure holes are clockwise
       }
     }
 

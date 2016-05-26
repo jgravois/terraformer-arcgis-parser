@@ -121,18 +121,17 @@ describe("ArcGIS Tools", function(){
       }
     });
   });
-  //
-  // /*
-  // http://geojson.org/geojson-spec.html#id4 // example is wrong
-  //
-  // http://www.macwright.org/2015/03/23/geojson-second-bite.html#polygons
-  // Polygon ring order is undefined in GeoJSON, but there’s a useful default to acquire: the right hand rule. Specifically this means that
-  //
-  // The exterior ring should be counterclockwise.
-  // Interior rings should be clockwise.
-  //
-  // http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#/Geometry_objects/02r3000000n1000000/
-  // */
+
+  /*
+  https://github.com/mapbox/tilemill/issues/2110#issuecomment-75897323
+  Polygon ring order is intentionally undefined in GeoJSON, but general consensus is that the construction below is preferred
+
+  The exterior ring should be counterclockwise.
+  Interior rings should be clockwise.
+
+  ArcGIS geometries utilize the inverse rule (clockwise outer, counter-clockwise inner)
+  http://resources.arcgis.com/en/help/arcgis-rest-api/index.html#/Geometry_objects/02r3000000n1000000/
+  */
   it("should utilize preferred ring ordering when converting a GeoJSON Polygon w/ a hole to an ArcGIS Polygon w/ 2 rings", function() {
     // counter-clockwise outer, clockwise inner
     var input = {
@@ -738,7 +737,6 @@ describe("ArcGIS Tools", function(){
     expect(output).toBeInstanceOfClass(Terraformer.MultiLineString);
   });
 
-  // ???
   it("should parse an ArcGIS Polygon into a Terraformer GeoJSON MultiPolygon", function() {
     var input = {
       "rings":[
@@ -794,9 +792,6 @@ describe("ArcGIS Tools", function(){
     };
 
     var output = Terraformer.ArcGIS.parse(input);
-
-    [ [ [ [ -122.63, 45.52 ], [ -122.64, 45.49 ], [ -122.49, 45.48 ], [ -122.52, 45.5 ], [ -122.57, 45.53 ], [ -122.63, 45.52 ] ] ], [ [ [ -83, 35 ], [ -74, 35 ], [ -74, 41 ], [ -83, 41 ], [ -83, 35 ] ] ] ]
-
     expect(output.coordinates).toEqual([
       [
         [ [ -122.63, 45.52 ], [ -122.64, 45.49 ], [ -122.49, 45.48 ], [ -122.52, 45.5 ], [ -122.57, 45.53 ], [ -122.63, 45.52 ] ]
@@ -805,19 +800,10 @@ describe("ArcGIS Tools", function(){
         [ [ -83, 35 ], [ -74, 35 ], [ -74, 41 ], [ -83, 41 ], [ -83, 35 ] ]
       ]
     ]);
-
-    // expect(output.coordinates).toEqual([
-    //   [
-    //     [ [-122.63,45.52],[-122.57,45.53],[-122.52,45.5],[-122.49,45.48],[-122.64,45.49],[-122.63,45.52] ]
-    //   ],
-    //   [
-    //     [ [-83,35],[-83,41],[-74,41],[-74,35],[-83,35] ]
-    //   ]
-    // ]);
     expect(output.type).toEqual("MultiPolygon");
   });
 
-  it("should enforce favored ring order when parsing an ArcGIS Polygon w/ 2 rings to a GeoJSON Polygon w/ a hole", function() {
+  it("should output favored ring order when parsing an ArcGIS Polygon w/ 2 rings to a GeoJSON Polygon w/ a hole", function() {
     // clockwise outer, counter-clockwise inner
     var input = {
       "rings": [
